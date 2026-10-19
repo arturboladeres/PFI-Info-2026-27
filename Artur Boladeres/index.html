@@ -139,6 +139,7 @@
       <span class="navbar-brand brand fs-4"><i class="fa-solid fa-microchip me-2"></i>PLACA QUEST</span>
       <div class="d-flex align-items-center gap-2">
         <span class="text-secondary small d-none d-md-inline">Aprèn les parts de la placa base</span>
+        <a href="tiktok.html" class="btn btn-sm btn-accent"><i class="fa-brands fa-tiktok me-1"></i>Mode TikTok</a>
         <button id="btn-mute" class="btn btn-outline-secondary btn-sm" title="So"><i class="fa-solid fa-volume-high"></i></button>
       </div>
     </div>
@@ -279,90 +280,10 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Confeti (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Dades de les parts de la placa -->
+  <script src="js/parts.js"></script>
 
   <script>
-  // ---------------------------------------------------------------
-  // Parts de la placa. Coordenades en píxels de la imatge (1000x750)
-  // ---------------------------------------------------------------
-  const PARTS = [
-    { id: 'chipset', name: 'Dissipador del chipset', icon: 'fa-fan',
-      desc: 'Cobreix el chipset (X570), el "centre de comunicacions" de la placa que gestiona els ports USB, SATA i les ranures PCIe. Porta un petit ventilador.',
-      fact: 'El chipset X570 consumeix uns 11 W, per això necessita ventilació activa.',
-      shapes: [{ t: 'poly', p: '530,262 690,102 836,102 836,250 660,502 625,502 625,330 603,300 565,300 530,330' }] },
-    { id: 'cpu', name: 'Sòcol de la CPU (AM4)', icon: 'fa-microchip',
-      desc: 'És on s\'instal·la el processador (aquí un AMD Ryzen). El sòcol AM4 té 1331 contactes i la CPU es fixa amb una palanca.',
-      fact: 'AM4 és un sòcol PGA: els pins són al processador, no a la placa.',
-      shapes: [{ t: 'rect', x: 322, y: 260, w: 122, h: 134 }] },
-    { id: 'holes', name: 'Forats del dissipador de CPU', icon: 'fa-crosshairs',
-      desc: 'Quatre forats al voltant del sòcol on es cargola el dissipador o la refrigeració líquida de la CPU.',
-      fact: 'Gràcies a aquest patró de forats estàndard, AM4 és compatible amb molts dissipadors.',
-      shapes: [{ t: 'circle', cx: 272, cy: 272, r: 14 }, { t: 'circle', cx: 490, cy: 272, r: 14 }, { t: 'circle', cx: 272, cy: 404, r: 14 }, { t: 'circle', cx: 490, cy: 404, r: 14 }] },
-    { id: 'ram', name: 'Ranures de memòria RAM (DIMM)', icon: 'fa-memory',
-      desc: 'Quatre ranures DDR4 on es connecten els mòduls de memòria RAM. Funcionen en doble canal, per això és millor posar-hi els mòduls en parelles.',
-      fact: 'Cada ranura té una osca que impedeix posar la memòria del revés.',
-      shapes: [{ t: 'rect', x: 203, y: 116, w: 359, h: 98 }] },
-    { id: 'atx', name: 'Connector ATX de 24 pins', icon: 'fa-plug',
-      desc: 'Rep l\'alimentació principal de la font (PSU) i la reparteix per tota la placa: 3,3 V, 5 V i 12 V.',
-      fact: 'Abans era de 20 pins; els 4 pins extres van arribar amb components més potents.',
-      shapes: [{ t: 'rect', x: 346, y: 66, w: 134, h: 32 }] },
-    { id: 'eps', name: 'Connector EPS de la CPU (8 pins)', icon: 'fa-bolt',
-      desc: 'Alimentació dedicada de 12 V per al processador. L\'energia va directament al VRM.',
-      fact: 'Les plaques pensades per a overclock en porten més d\'un (per exemple 8+4 pins).',
-      shapes: [{ t: 'rect', x: 146, y: 496, w: 26, h: 80 }] },
-    { id: 'vrm', name: 'Dissipadors del VRM', icon: 'fa-temperature-half',
-      desc: 'Refreden el VRM (mòdul regulador de voltatge), que converteix els 12 V de la font en el voltatge baix (~1,2 V) que necessita la CPU.',
-      fact: 'Com més fases té el VRM, més estable és l\'energia que rep la CPU.',
-      shapes: [{ t: 'poly', p: '133,272 205,272 232,300 232,482 210,500 133,500' }, { t: 'rect', x: 172, y: 476, w: 274, h: 56 }] },
-    { id: 'chokes', name: 'Bobines del VRM (chokes)', icon: 'fa-circle-nodes',
-      desc: 'Petits inductors que filtren i estabilitzen el corrent de cada fase del VRM abans d\'arribar a la CPU.',
-      fact: 'El xiulet que de vegades fa un PC amb molta càrrega ("coil whine") ve sovint d\'aquestes bobines.',
-      shapes: [{ t: 'rect', x: 236, y: 436, w: 192, h: 24 }] },
-    { id: 'io', name: 'Cobertor del panell posterior (I/O)', icon: 'fa-shield-halved',
-      desc: 'Protegeix els connectors del panell posterior (USB, xarxa, àudio, vídeo...) que surten per darrere de la caixa de l\'ordinador.',
-      fact: 'Sovint amaga la il·luminació RGB del logotip de la placa.',
-      shapes: [{ t: 'poly', p: '93,713 128,545 165,538 455,538 520,518 620,640 548,668 548,713' }] },
-    { id: 'm2', name: 'Dissipadors M.2', icon: 'fa-hard-drive',
-      desc: 'A sota hi ha les ranures M.2 per a SSD NVMe, molt més ràpids que els discos SATA. El dissipador evita que s\'escalfin massa.',
-      fact: 'Un SSD NVMe PCIe 4.0 pot llegir a més de 7.000 MB/s.',
-      shapes: [{ t: 'rect', x: 528, y: 330, w: 52, h: 262 }, { t: 'rect', x: 776, y: 255, w: 60, h: 205 }] },
-    { id: 'pcie16', name: 'Ranures PCI Express x16', icon: 'fa-display',
-      desc: 'Ranures llargues per a targetes d\'expansió, sobretot la targeta gràfica. La més propera a la CPU és la més ràpida.',
-      fact: 'Tenen un reforç metàl·lic per aguantar targetes gràfiques molt pesades.',
-      shapes: [{ t: 'rect', x: 583, y: 300, w: 35, h: 272 }, { t: 'rect', x: 737, y: 306, w: 36, h: 266 }, { t: 'rect', x: 847, y: 300, w: 24, h: 272 }] },
-    { id: 'pcie1', name: 'Ranures PCI Express x1', icon: 'fa-network-wired',
-      desc: 'Ranures curtes per a targetes petites: Wi-Fi, so, ports USB addicionals, capturadores de vídeo...',
-      fact: 'Una targeta x1 també funciona si la poses en una ranura x16.',
-      shapes: [{ t: 'rect', x: 693, y: 505, w: 25, h: 64 }, { t: 'rect', x: 796, y: 505, w: 23, h: 64 }] },
-    { id: 'cmos', name: 'Pila CMOS (CR2032)', icon: 'fa-battery-half',
-      desc: 'Manté l\'hora i la configuració de la BIOS/UEFI quan l\'ordinador està desconnectat de la corrent.',
-      fact: 'Si la treus uns minuts, la configuració de la BIOS torna als valors de fàbrica (Clear CMOS).',
-      shapes: [{ t: 'circle', cx: 700, cy: 467, r: 28 }] },
-    { id: 'qcode', name: 'Pantalla de diagnòstic (Debug LED)', icon: 'fa-bug',
-      desc: 'Mostra codis de dos dígits durant l\'arrencada (POST). Si l\'ordinador no engega, el codi indica on és el problema.',
-      fact: 'Cada codi correspon a una fase: memòria, CPU, gràfica, dispositiu d\'arrencada...',
-      shapes: [{ t: 'rect', x: 866, y: 490, w: 34, h: 42 }] },
-    { id: 'audio', name: 'Còdec d\'àudio (SupremeFX)', icon: 'fa-volume-high',
-      desc: 'Xip que converteix el so digital en senyal analògic per als altaveus i els auriculars.',
-      fact: 'La zona d\'àudio està separada de la resta de la placa per reduir interferències elèctriques.',
-      shapes: [{ t: 'rect', x: 757, y: 608, w: 52, h: 54 }] },
-    { id: 'audiocaps', name: 'Condensadors d\'àudio', icon: 'fa-music',
-      desc: 'Condensadors de qualitat especial per a àudio que filtren el senyal i fan que el so sigui més net.',
-      fact: 'Solen ser daurats o de colors per diferenciar-los dels altres condensadors.',
-      shapes: [{ t: 'rect', x: 812, y: 595, w: 86, h: 55 }] },
-    { id: 'sata', name: 'Ports SATA', icon: 'fa-database',
-      desc: 'Connecten discos durs (HDD), SSD SATA i unitats òptiques. Estan girats per facilitar el pas dels cables.',
-      fact: 'SATA III arriba fins a 6 Gb/s (uns 600 MB/s).',
-      shapes: [{ t: 'rect', x: 682, y: 63, w: 170, h: 45 }] },
-    { id: 'headers', name: 'Capçals interns (USB, ventiladors, RGB)', icon: 'fa-grip-vertical',
-      desc: 'Connectors de pins per als ports USB frontals de la caixa, ventiladors, tires LED RGB i el panell frontal (botó d\'encesa, LEDs...).',
-      fact: 'El manual de la placa indica exactament on va cada cable del panell frontal.',
-      shapes: [{ t: 'rect', x: 872, y: 108, w: 28, h: 374 }] },
-    { id: 'fan', name: 'Connectors del ventilador de CPU', icon: 'fa-wind',
-      desc: 'Connectors de 4 pins (CPU_FAN i CPU_OPT) per al ventilador del dissipador de la CPU. La placa en controla la velocitat (PWM).',
-      fact: 'Si no hi ha res connectat a CPU_FAN, moltes plaques mostren un avís en arrencar.',
-      shapes: [{ t: 'rect', x: 147, y: 155, w: 52, h: 95 }] },
-  ];
-
   const GAME = {
     find: { title: 'TROBA-LA', icon: 'fa-crosshairs', questions: 10, time: 20,
             text: 'Et diré el nom d\'una part i l\'has de trobar a la foto fent-hi clic.',

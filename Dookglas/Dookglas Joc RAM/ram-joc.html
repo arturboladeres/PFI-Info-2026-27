@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ca" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAM Rush: el joc de la memòria</title>
+
+  <!-- Bootstrap CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome (CDN) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    body { background: #0b1712; }
+    .gold { color: #e3b53f; }
+    .panel { background: #12251c; border: 1px solid #24463a; }
+    .ram-bar { height: 34px; background: #0b1712; border: 2px solid #c8961e; }
+    .ram-bar .progress-bar { transition: width .25s, background-color .25s; font-weight: 700; }
+    .app { border: 2px solid #24463a; background: #163226; color: #fff; text-align: left; padding: 12px;
+           border-radius: 10px; width: 100%; animation: pop .25s ease-out; }
+    .app:hover, .app:focus-visible { border-color: #e3b53f; background: #1d4030; outline: none; }
+    .app .gb { font-size: 1.4rem; font-weight: 800; color: #e3b53f; }
+    .app .x { float: right; opacity: .55; }
+    @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .danger-zone { animation: shake .35s infinite; }
+    @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    @media (prefers-reduced-motion: reduce) { .app, .danger-zone { animation: none; } }
+    #apps { min-height: 220px; }
+    .stat { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar bg-body-tertiary border-bottom">
+  <div class="container">
+    <span class="navbar-brand fw-bold"><i class="fa-solid fa-memory gold me-2"></i>RAM Rush</span>
+    <div class="d-flex gap-2">
+      <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#mAjuda"><i class="fa-solid fa-circle-question me-1"></i>Com es juga</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container py-4">
+  <div class="row g-3 align-items-center mb-3">
+    <div class="col-md-8">
+      <h1 class="h2 fw-bold mb-1">Salva el teu ordinador!</h1>
+      <p class="text-body-secondary mb-0">Els programes s’obren sols i ocupen RAM. Tanca’ls abans que la memòria s’ompli.</p>
+    </div>
+    <div class="col-md-4 d-none d-md-block">
+      <img src="ram.png" class="img-fluid rounded" alt="Mòduls de memòria RAM">
+    </div>
+  </div>
+
+  <!-- Marcadors -->
+  <div class="row g-3 text-center mb-3">
+    <div class="col-3"><div class="panel rounded p-2"><div class="small text-body-secondary"><i class="fa-solid fa-star gold"></i> Punts</div><div class="stat" id="sPunts">0</div></div></div>
+    <div class="col-3"><div class="panel rounded p-2"><div class="small text-body-secondary"><i class="fa-solid fa-layer-group gold"></i> Nivell</div><div class="stat" id="sNivell">1</div></div></div>
+    <div class="col-3"><div class="panel rounded p-2"><div class="small text-body-secondary"><i class="fa-solid fa-clock gold"></i> Temps</div><div class="stat" id="sTemps">0s</div></div></div>
+    <div class="col-3"><div class="panel rounded p-2"><div class="small text-body-secondary"><i class="fa-solid fa-trophy gold"></i> Rècord</div><div class="stat" id="sRecord">0</div></div></div>
+  </div>
+
+  <!-- Barra de RAM -->
+  <div class="panel rounded p-3 mb-3" id="ramBox">
+    <div class="d-flex justify-content-between mb-2">
+      <strong><i class="fa-solid fa-microchip gold me-2"></i>Memòria RAM</strong>
+      <span id="ramTxt">0 / 16 GB</span>
+    </div>
+    <div class="progress ram-bar" role="progressbar" aria-label="RAM en ús">
+      <div class="progress-bar bg-success" id="ramFill" style="width:0%"></div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+      <button class="btn btn-warning" id="bUpgrade" disabled><i class="fa-solid fa-circle-plus me-2"></i>Ampliar +8 GB <span class="badge text-bg-dark ms-1" id="cost">150</span></button>
+      <button class="btn btn-outline-danger" id="bClean" disabled><i class="fa-solid fa-broom me-2"></i>Netejar tot <span class="badge text-bg-dark ms-1">300</span></button>
+      <span class="text-body-secondary small ms-auto" id="hint">Prem «Començar» per jugar.</span>
+    </div>
+  </div>
+
+  <!-- Programes oberts -->
+  <div class="panel rounded p-3">
+    <h2 class="h6 mb-3"><i class="fa-solid fa-window-restore gold me-2"></i>Programes oberts</h2>
+    <div class="row g-3" id="apps"></div>
+  </div>
+</main>
+
+<!-- Modal ajuda / inici -->
+<div class="modal fade" id="mAjuda" tabindex="-1" aria-labelledby="tAjuda" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title h5" id="tAjuda"><i class="fa-solid fa-gamepad gold me-2"></i>Com es juga</h2><button class="btn-close" data-bs-dismiss="modal" aria-label="Tanca"></button></div>
+      <div class="modal-body">
+        <ul class="list-unstyled mb-3">
+          <li class="mb-2"><i class="fa-solid fa-hand-pointer gold me-2"></i>Fes clic a un programa per <strong>tancar-lo</strong> i alliberar la seva RAM.</li>
+          <li class="mb-2"><i class="fa-solid fa-star gold me-2"></i>Com més GB ocupa, més punts guanyes en tancar-lo.</li>
+          <li class="mb-2"><i class="fa-solid fa-circle-plus gold me-2"></i>Gasta punts per <strong>ampliar la RAM</strong> (+8 GB) o per netejar-ho tot.</li>
+          <li><i class="fa-solid fa-skull gold me-2"></i>Si la RAM s’omple, l’ordinador es penja i s’acaba la partida.</li>
+        </ul>
+        <p class="small text-body-secondary mb-0">Cada 10 segons puges de nivell: els programes arriben més de pressa i són més pesats.</p>
+      </div>
+      <div class="modal-footer"><button class="btn btn-warning" id="bStart"><i class="fa-solid fa-play me-2"></i>Començar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal final -->
+<div class="modal fade" id="mFi" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="tFi" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center">
+      <div class="modal-body p-4">
+        <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+        <h2 class="h3 fw-bold" id="tFi">L’ordinador s’ha penjat!</h2>
+        <p class="mb-1">Punts: <strong id="fiPunts">0</strong> · Nivell: <strong id="fiNivell">1</strong> · Temps: <strong id="fiTemps">0s</strong></p>
+        <p class="gold fw-bold" id="fiRecord"></p>
+        <div class="alert alert-success text-start small" id="fiTip"></div>
+        <button class="btn btn-warning btn-lg" id="bRetry"><i class="fa-solid fa-rotate-right me-2"></i>Tornar-ho a provar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const PROGRAMES = [
+    { n: "Correu",          i: "fa-envelope",    gb: 1, nv: 1 },
+    { n: "Música",          i: "fa-music",       gb: 1, nv: 1 },
+    { n: "Navegador",       i: "fa-globe",       gb: 2, nv: 1 },
+    { n: "Videotrucada",    i: "fa-video",       gb: 2, nv: 2 },
+    { n: "Editor de fotos", i: "fa-image",       gb: 3, nv: 2 },
+    { n: "Compilador",      i: "fa-code",        gb: 3, nv: 3 },
+    { n: "Videojoc",        i: "fa-gamepad",     gb: 4, nv: 3 },
+    { n: "Edició de vídeo", i: "fa-film",        gb: 4, nv: 4 },
+    { n: "Màquina virtual", i: "fa-server",      gb: 5, nv: 5 },
+    { n: "IA local",        i: "fa-brain",       gb: 6, nv: 6 }
+  ];
+  const TIPS = [
+    "La RAM és volàtil: quan s’apaga l’equip, perd tot el que conté.",
+    "Dos mòduls idèntics en doble canal donen més amplada de banda que un de sol.",
+    "Si la RAM s’omple, el sistema fa servir el disc com a memòria virtual i tot va molt més lent.",
+    "DDR5 és més ràpida i eficient que DDR4, però no són compatibles entre elles.",
+    "Per a ús general, 16 GB és avui el punt dolç per a la majoria de persones.",
+    "Els contactes daurats connecten el mòdul amb la placa base; la mossa central evita posar-lo al revés."
+  ];
+  const COST_UP = 150, COST_CLEAN = 300, MAX_CAP = 64;
+
+  let s, spawnT, clockT, uid = 0;
+  const $ = id => document.getElementById(id);
+  const mAjuda = new bootstrap.Modal($("mAjuda"));
+  const mFi = new bootstrap.Modal($("mFi"));
+
+  function record() { try { return +localStorage.getItem("ramrush") || 0; } catch (e) { return 0; } }
+  function saveRecord(v) { try { localStorage.setItem("ramrush", v); } catch (e) {} }
+
+  function nou() {
+    s = { cap: 16, items: [], punts: 0, nivell: 1, temps: 0, viu: false };
+    uid = 0; render();
+  }
+  const usada = () => s.items.reduce((t, a) => t + a.gb, 0);
+
+  function render() {
+    const u = usada(), pct = Math.min(100, u / s.cap * 100);
+    const fill = $("ramFill");
+    fill.style.width = pct + "%";
+    fill.textContent = Math.round(pct) + "%";
+    fill.className = "progress-bar " + (pct < 60 ? "bg-success" : pct < 85 ? "bg-warning" : "bg-danger");
+    $("ramTxt").textContent = u + " / " + s.cap + " GB";
+    $("ramBox").classList.toggle("danger-zone", pct >= 85 && s.viu);
+    $("sPunts").textContent = s.punts;
+    $("sNivell").textContent = s.nivell;
+    $("sTemps").textContent = s.temps + "s";
+    $("sRecord").textContent = Math.max(record(), s.punts);
+    $("bUpgrade").disabled = !s.viu || s.punts < COST_UP || s.cap >= MAX_CAP;
+    $("bClean").disabled = !s.viu || s.punts < COST_CLEAN || !s.items.length;
+    $("hint").textContent = !s.viu ? "Prem «Començar» per jugar." : pct >= 85 ? "Perill! Tanca programes ja!" : "Tanca els programes pesats primer.";
+
+    const cont = $("apps");
+    cont.innerHTML = "";
+    s.items.forEach(a => {
+      const col = document.createElement("div");
+      col.className = "col-6 col-md-4 col-lg-3";
+      col.innerHTML = '<button class="app" type="button" aria-label="Tanca ' + a.n + ', ' + a.gb + ' GB">' +
+        '<i class="fa-solid fa-xmark x"></i><i class="fa-solid ' + a.i + ' me-2"></i>' + a.n +
+        '<div class="gb">' + a.gb + ' GB</div></button>';
+      col.firstChild.addEventListener("click", () => tanca(a.id));
+      cont.appendChild(col);
+    });
+  }
+
+  function tanca(id) {
+    if (!s.viu) return;
+    const a = s.items.find(x => x.id === id);
+    if (!a) return;
+    s.items = s.items.filter(x => x.id !== id);
+    s.punts += a.gb * 10;
+    render();
+  }
+
+  function obre() {
+    const llista = PROGRAMES.filter(p => p.nv <= s.nivell);
+    const p = llista[Math.floor(Math.random() * llista.length)];
+    s.items.push({ id: ++uid, n: p.n, i: p.i, gb: p.gb });
+    render();
+    if (usada() > s.cap) fi();
+  }
+
+  function bucle() {
+    if (!s.viu) return;
+    obre();
+    if (!s.viu) return;
+    spawnT = setTimeout(bucle, Math.max(450, 1900 - s.nivell * 140));
+  }
+
+  function comença() {
+    clearTimeout(spawnT); clearInterval(clockT);
+    nou(); s.viu = true;
+    mAjuda.hide(); mFi.hide();
+    render();
+    spawnT = setTimeout(bucle, 700);
+    clockT = setInterval(() => {
+      s.temps++;
+      if (s.temps % 10 === 0) s.nivell++;
+      render();
+    }, 1000);
+  }
+
+  function fi() {
+    s.viu = false;
+    clearTimeout(spawnT); clearInterval(clockT);
+    const rec = record(), nouRec = s.punts > rec;
+    if (nouRec) saveRecord(s.punts);
+    $("fiPunts").textContent = s.punts;
+    $("fiNivell").textContent = s.nivell;
+    $("fiTemps").textContent = s.temps + "s";
+    $("fiRecord").innerHTML = nouRec ? '<i class="fa-solid fa-trophy me-1"></i>Nou rècord!' : "";
+    $("fiTip").innerHTML = '<i class="fa-solid fa-lightbulb me-2"></i>' + TIPS[Math.floor(Math.random() * TIPS.length)];
+    render();
+    mFi.show();
+  }
+
+  $("bUpgrade").addEventListener("click", () => {
+    if (!s.viu || s.punts < COST_UP || s.cap >= MAX_CAP) return;
+    s.punts -= COST_UP; s.cap += 8; render();
+  });
+  $("bClean").addEventListener("click", () => {
+    if (!s.viu || s.punts < COST_CLEAN) return;
+    s.punts -= COST_CLEAN; s.items = []; render();
+  });
+  $("bStart").addEventListener("click", comença);
+  $("bRetry").addEventListener("click", comença);
+
+  // Si s'obre l'ajuda durant la partida, es pausa
+  $("mAjuda").addEventListener("show.bs.modal", () => { if (s && s.viu) { s.viu = false; clearTimeout(spawnT); clearInterval(clockT); s.pausat = true; } });
+
+  nou();
+  mAjuda.show();
+</script>
+</body>
+</html>

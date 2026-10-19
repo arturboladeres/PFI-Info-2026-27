@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ca" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Placa Quest</title>
+
+  <!-- Bootstrap (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome (CDN) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+  <!-- Tipografies -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #ff2d55;
+      --accent2: #00e0ff;
+      --ok: #2ee59d;
+      --bad: #ff4d4f;
+      --gold: #ffc800;
+      --bg: #0b0f17;
+      --card: rgba(18, 24, 38, .85);
+    }
+    body {
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #1b2440 0%, transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, #3a0d1d 0%, transparent 55%),
+        var(--bg);
+      min-height: 100vh;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .brand { font-family: Orbitron, sans-serif; letter-spacing: .06em; }
+    .brand .fa-microchip { color: var(--accent); }
+    .glass {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, .08);
+      border-radius: 1rem;
+      backdrop-filter: blur(6px);
+    }
+    .btn-accent { background: var(--accent); color: #fff; border: none; }
+    .btn-accent:hover, .btn-accent:focus { background: #e0244a; color: #fff; }
+
+    /* Selector de mode */
+    .mode-btn { border-color: rgba(255,255,255,.15) !important; }
+    .mode-btn.active { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
+
+    /* Placa base + zones clicables */
+    .board-wrap {
+      position: relative;
+      border-radius: .75rem;
+      overflow: hidden;
+      user-select: none;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .board-wrap img { display: block; width: 100%; height: auto; }
+    #hotspots { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #hotspots .bg { fill: transparent; }
+    #hotspots .part > * {
+      fill: transparent;
+      stroke: transparent;
+      stroke-width: 3;
+      vector-effect: non-scaling-stroke;
+      transition: fill .15s, stroke .15s;
+      cursor: pointer;
+    }
+    body.mode-explore #hotspots .part:hover > *,
+    body.show-all #hotspots .part > * { fill: rgba(0,224,255,.15); stroke: var(--accent2); }
+    body.mode-explore #hotspots .part.found > * { fill: rgba(46,229,157,.10); stroke: rgba(46,229,157,.55); stroke-dasharray: 6 4; }
+    body.mode-explore #hotspots .part.found:hover > * { fill: rgba(46,229,157,.22); stroke: var(--ok); stroke-dasharray: none; }
+    #hotspots .part.selected > *,
+    body.mode-explore #hotspots .part.selected > * { fill: rgba(0,224,255,.30); stroke: var(--accent2); stroke-dasharray: none; }
+    #hotspots .part.correct > * { fill: rgba(46,229,157,.38); stroke: var(--ok); stroke-dasharray: none; }
+    #hotspots .part.wrong > * { fill: rgba(255,77,79,.38); stroke: var(--bad); stroke-dasharray: none; }
+    #hotspots .part.target > * { fill: rgba(255,200,0,.22); stroke: var(--gold); animation: pulse 1s ease-in-out infinite; }
+    body.mode-find .board-wrap, body.mode-find #hotspots .part > *, body.mode-find #hotspots .bg { cursor: crosshair; }
+    body.mode-quiz #hotspots .part > * { cursor: default; }
+    @keyframes pulse { 50% { fill: rgba(255,200,0,.45); } }
+
+    .ripple { fill: none; stroke: #fff; stroke-width: 3; vector-effect: non-scaling-stroke; animation: ripple .7s ease-out forwards; pointer-events: none; }
+    @keyframes ripple { from { r: 4; opacity: 1; } to { r: 40; opacity: 0; } }
+
+    /* Etiquetes sobre la imatge */
+    .board-label {
+      position: absolute;
+      transform: translate(-50%, calc(-100% - 8px));
+      background: rgba(10,14,22,.92);
+      border: 1px solid var(--accent2);
+      color: #fff;
+      font-size: .8rem;
+      font-weight: 600;
+      padding: .25rem .6rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: pop .25s ease-out;
+      z-index: 5;
+    }
+    .board-label.below { transform: translate(-50%, 8px); }
+    .board-label.ok { border-color: var(--ok); }
+    .board-label.bad { border-color: var(--bad); }
+    @keyframes pop { from { opacity: 0; scale: .8; } to { opacity: 1; scale: 1; } }
+
+    .shake { animation: shake .4s; }
+    @keyframes shake { 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+
+    /* Panell explorar */
+    .info-icon {
+      width: 56px; height: 56px; flex: 0 0 56px;
+      display: grid; place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), #7a1fff);
+      font-size: 1.5rem;
+    }
+    .part-chip { font-size: .78rem; border-radius: 999px; }
+    .part-chip.locked { opacity: .55; }
+
+    /* HUD del joc */
+    .stat { text-align: center; }
+    .stat .value { font-family: Orbitron, sans-serif; font-size: 1.4rem; font-weight: 800; }
+    .stat .label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--bs-secondary-color); }
+    .hearts .fa-heart { color: var(--accent); }
+    .hearts .fa-heart.lost { color: #444; }
+    .timer-bar { height: 8px; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+    .timer-bar > div { height: 100%; width: 100%; background: linear-gradient(90deg, var(--ok), var(--gold), var(--accent)); background-size: 300% 100%; transition: width .1s linear; }
+    .prompt-name { font-family: Orbitron, sans-serif; font-weight: 800; font-size: 1.35rem; color: var(--gold); }
+    .start-icon { font-size: 3rem; color: var(--accent); }
+    .option-btn { text-align: left; }
+    .option-btn.correct { background: var(--ok) !important; border-color: var(--ok) !important; color: #000 !important; }
+    .option-btn.wrong { background: var(--bad) !important; border-color: var(--bad) !important; color: #fff !important; }
+    .stars .fa-star { font-size: 2.2rem; color: #444; margin: 0 .2rem; }
+    .stars .fa-star.on { color: var(--gold); }
+  </style>
+</head>
+<body class="mode-explore">
+
+  <nav class="navbar border-bottom border-secondary-subtle mb-4">
+    <div class="container-xl">
+      <span class="navbar-brand brand fs-4"><i class="fa-solid fa-microchip me-2"></i>PLACA QUEST</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-secondary small d-none d-md-inline">Aprèn les parts de la placa base</span>
+        <button id="btn-mute" class="btn btn-outline-secondary btn-sm" title="So"><i class="fa-solid fa-volume-high"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-xl pb-5">
+    <!-- Selector de mode -->
+    <div class="d-flex justify-content-center mb-4">
+      <div class="btn-group flex-wrap" role="group">
+        <button class="btn btn-outline-light mode-btn active" data-mode="explore"><i class="fa-solid fa-magnifying-glass me-2"></i>Explora</button>
+        <button class="btn btn-outline-light mode-btn" data-mode="find"><i class="fa-solid fa-crosshairs me-2"></i>Troba-la</button>
+        <button class="btn btn-outline-light mode-btn" data-mode="quiz"><i class="fa-solid fa-circle-question me-2"></i>Endevina el nom</button>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Imatge de la placa -->
+      <div class="col-lg-8">
+        <div class="board-wrap" id="board">
+          <img src="img/placa-base.webp" alt="Placa base ASUS ROG Strix amb processador AMD Ryzen" width="1000" height="750">
+          <svg id="hotspots" viewBox="0 0 1000 750" xmlns="http://www.w3.org/2000/svg">
+            <rect class="bg" x="0" y="0" width="1000" height="750"></rect>
+          </svg>
+          <div id="labels"></div>
+        </div>
+        <p class="text-secondary small mt-2 mb-0"><i class="fa-solid fa-hand-pointer me-1"></i><span id="board-hint">Passa el ratolí per sobre la placa i fes clic a qualsevol part per descobrir-ne el nom.</span></p>
+      </div>
+
+      <!-- Panell lateral -->
+      <div class="col-lg-4">
+
+        <!-- MODE EXPLORA -->
+        <div id="panel-explore">
+          <div class="glass p-3 mb-3" id="info">
+            <div class="d-flex gap-3 align-items-center">
+              <div class="info-icon"><i class="fa-solid fa-hand-pointer"></i></div>
+              <div>
+                <h5 class="mb-1">Explora la placa</h5>
+                <p class="mb-0 text-secondary small">Fes clic a una part de la foto i et diré com es diu i per a què serveix.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="m-0"><i class="fa-solid fa-list-check me-2"></i>Parts descobertes</h6>
+              <span class="badge text-bg-success" id="found-count">0/0</span>
+            </div>
+            <div class="progress mb-3" style="height:6px"><div id="found-bar" class="progress-bar bg-success" style="width:0%"></div></div>
+            <div class="form-check form-switch mb-3">
+              <input id="show-all" class="form-check-input" type="checkbox">
+              <label class="form-check-label small" for="show-all">Mostra totes les zones</label>
+            </div>
+            <div id="part-list" class="d-flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+
+        <!-- MODES DE JOC -->
+        <div id="panel-game" class="d-none">
+          <!-- Pantalla d'inici -->
+          <div id="game-start" class="glass p-4 text-center">
+            <div class="start-icon mb-2"><i id="start-icon" class="fa-solid fa-crosshairs"></i></div>
+            <h4 id="start-title" class="brand mb-2">TROBA-LA</h4>
+            <p id="start-text" class="text-secondary"></p>
+            <ul class="list-unstyled small text-start mx-auto mb-3" style="max-width: 280px">
+              <li class="mb-1"><i class="fa-solid fa-list-ol fa-fw me-2 text-info"></i><span id="rule-q"></span> preguntes</li>
+              <li class="mb-1"><i class="fa-solid fa-heart fa-fw me-2" style="color:var(--accent)"></i>3 vides</li>
+              <li class="mb-1"><i class="fa-solid fa-stopwatch fa-fw me-2 text-warning"></i><span id="rule-t"></span> segons per pregunta</li>
+              <li><i class="fa-solid fa-fire fa-fw me-2 text-danger"></i>Bonus per ratxa i per rapidesa</li>
+            </ul>
+            <p class="small mb-3"><i class="fa-solid fa-trophy me-1 text-warning"></i>Millor puntuació: <strong id="best">0</strong></p>
+            <button class="btn btn-accent btn-lg px-4" id="btn-start"><i class="fa-solid fa-play me-2"></i>Comença</button>
+          </div>
+
+          <!-- Partida en curs -->
+          <div id="game-play" class="d-none">
+            <div class="glass p-3 mb-3">
+              <div class="row g-0 mb-3">
+                <div class="col stat"><div class="value" id="hud-score">0</div><div class="label">Punts</div></div>
+                <div class="col stat"><div class="value hearts" id="hud-lives"></div><div class="label">Vides</div></div>
+                <div class="col stat"><div class="value"><i class="fa-solid fa-fire text-danger"></i> <span id="hud-streak">0</span></div><div class="label">Ratxa</div></div>
+              </div>
+              <div class="d-flex justify-content-between small text-secondary mb-1">
+                <span>Pregunta <span id="hud-q">1</span>/<span id="hud-total">10</span></span>
+                <span><i class="fa-solid fa-stopwatch me-1"></i><span id="hud-time">20</span>s</span>
+              </div>
+              <div class="timer-bar"><div id="timer-fill"></div></div>
+            </div>
+
+            <div class="glass p-3" id="question-card">
+              <div class="small text-secondary text-uppercase mb-1" id="q-label">Troba a la foto:</div>
+              <div class="prompt-name mb-2" id="q-prompt"></div>
+
+              <div id="find-tools">
+                <button class="btn btn-sm btn-outline-warning" id="btn-hint"><i class="fa-solid fa-lightbulb me-1"></i>Pista (−30 punts)</button>
+                <div id="hint-text" class="small text-warning-emphasis mt-2 d-none"></div>
+              </div>
+
+              <div id="quiz-options" class="d-grid gap-2"></div>
+
+              <div id="feedback" class="mt-3 d-none"></div>
+            </div>
+
+            <div class="text-end mt-2">
+              <button class="btn btn-link btn-sm text-secondary" id="btn-quit"><i class="fa-solid fa-flag me-1"></i>Abandonar</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de final de partida -->
+  <div class="modal fade" id="endModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass">
+        <div class="modal-body text-center p-4">
+          <h3 class="brand mb-3" id="end-title">FI DE LA PARTIDA</h3>
+          <div class="stars mb-3" id="end-stars"></div>
+          <div class="display-5 brand fw-bold mb-1" id="end-score">0</div>
+          <div class="text-secondary mb-3">punts</div>
+          <div class="row g-2 mb-3 small">
+            <div class="col"><div class="glass p-2"><i class="fa-solid fa-check text-success me-1"></i><span id="end-correct">0</span> encerts</div></div>
+            <div class="col"><div class="glass p-2"><i class="fa-solid fa-fire text-danger me-1"></i>Ratxa <span id="end-streak">0</span></div></div>
+          </div>
+          <p id="end-record" class="text-warning d-none"><i class="fa-solid fa-trophy me-1"></i>Nou rècord!</p>
+          <div class="d-flex gap-2 justify-content-center">
+            <button class="btn btn-accent" id="btn-again"><i class="fa-solid fa-rotate-right me-2"></i>Torna a jugar</button>
+            <button class="btn btn-outline-light" id="btn-explore"><i class="fa-solid fa-magnifying-glass me-2"></i>Explora</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Confeti (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+  // ---------------------------------------------------------------
+  // Parts de la placa. Coordenades en píxels de la imatge (1000x750)
+  // ---------------------------------------------------------------
+  const PARTS = [
+    { id: 'chipset', name: 'Dissipador del chipset', icon: 'fa-fan',
+      desc: 'Cobreix el chipset (X570), el "centre de comunicacions" de la placa que gestiona els ports USB, SATA i les ranures PCIe. Porta un petit ventilador.',
+      fact: 'El chipset X570 consumeix uns 11 W, per això necessita ventilació activa.',
+      shapes: [{ t: 'poly', p: '530,262 690,102 836,102 836,250 660,502 625,502 625,330 603,300 565,300 530,330' }] },
+    { id: 'cpu', name: 'Sòcol de la CPU (AM4)', icon: 'fa-microchip',
+      desc: 'És on s\'instal·la el processador (aquí un AMD Ryzen). El sòcol AM4 té 1331 contactes i la CPU es fixa amb una palanca.',
+      fact: 'AM4 és un sòcol PGA: els pins són al processador, no a la placa.',
+      shapes: [{ t: 'rect', x: 322, y: 260, w: 122, h: 134 }] },
+    { id: 'holes', name: 'Forats del dissipador de CPU', icon: 'fa-crosshairs',
+      desc: 'Quatre forats al voltant del sòcol on es cargola el dissipador o la refrigeració líquida de la CPU.',
+      fact: 'Gràcies a aquest patró de forats estàndard, AM4 és compatible amb molts dissipadors.',
+      shapes: [{ t: 'circle', cx: 272, cy: 272, r: 14 }, { t: 'circle', cx: 490, cy: 272, r: 14 }, { t: 'circle', cx: 272, cy: 404, r: 14 }, { t: 'circle', cx: 490, cy: 404, r: 14 }] },
+    { id: 'ram', name: 'Ranures de memòria RAM (DIMM)', icon: 'fa-memory',
+      desc: 'Quatre ranures DDR4 on es connecten els mòduls de memòria RAM. Funcionen en doble canal, per això és millor posar-hi els mòduls en parelles.',
+      fact: 'Cada ranura té una osca que impedeix posar la memòria del revés.',
+      shapes: [{ t: 'rect', x: 203, y: 116, w: 359, h: 98 }] },
+    { id: 'atx', name: 'Connector ATX de 24 pins', icon: 'fa-plug',
+      desc: 'Rep l\'alimentació principal de la font (PSU) i la reparteix per tota la placa: 3,3 V, 5 V i 12 V.',
+      fact: 'Abans era de 20 pins; els 4 pins extres van arribar amb components més potents.',
+      shapes: [{ t: 'rect', x: 346, y: 66, w: 134, h: 32 }] },
+    { id: 'eps', name: 'Connector EPS de la CPU (8 pins)', icon: 'fa-bolt',
+      desc: 'Alimentació dedicada de 12 V per al processador. L\'energia va directament al VRM.',
+      fact: 'Les plaques pensades per a overclock en porten més d\'un (per exemple 8+4 pins).',
+      shapes: [{ t: 'rect', x: 146, y: 496, w: 26, h: 80 }] },
+    { id: 'vrm', name: 'Dissipadors del VRM', icon: 'fa-temperature-half',
+      desc: 'Refreden el VRM (mòdul regulador de voltatge), que converteix els 12 V de la font en el voltatge baix (~1,2 V) que necessita la CPU.',
+      fact: 'Com més fases té el VRM, més estable és l\'energia que rep la CPU.',
+      shapes: [{ t: 'poly', p: '133,272 205,272 232,300 232,482 210,500 133,500' }, { t: 'rect', x: 172, y: 476, w: 274, h: 56 }] },
+    { id: 'chokes', name: 'Bobines del VRM (chokes)', icon: 'fa-circle-nodes',
+      desc: 'Petits inductors que filtren i estabilitzen el corrent de cada fase del VRM abans d\'arribar a la CPU.',
+      fact: 'El xiulet que de vegades fa un PC amb molta càrrega ("coil whine") ve sovint d\'aquestes bobines.',
+      shapes: [{ t: 'rect', x: 236, y: 436, w: 192, h: 24 }] },
+    { id: 'io', name: 'Cobertor del panell posterior (I/O)', icon: 'fa-shield-halved',
+      desc: 'Protegeix els connectors del panell posterior (USB, xarxa, àudio, vídeo...) que surten per darrere de la caixa de l\'ordinador.',
+      fact: 'Sovint amaga la il·luminació RGB del logotip de la placa.',
+      shapes: [{ t: 'poly', p: '93,713 128,545 165,538 455,538 520,518 620,640 548,668 548,713' }] },
+    { id: 'm2', name: 'Dissipadors M.2', icon: 'fa-hard-drive',
+      desc: 'A sota hi ha les ranures M.2 per a SSD NVMe, molt més ràpids que els discos SATA. El dissipador evita que s\'escalfin massa.',
+      fact: 'Un SSD NVMe PCIe 4.0 pot llegir a més de 7.000 MB/s.',
+      shapes: [{ t: 'rect', x: 528, y: 330, w: 52, h: 262 }, { t: 'rect', x: 776, y: 255, w: 60, h: 205 }] },
+    { id: 'pcie16', name: 'Ranures PCI Express x16', icon: 'fa-display',
+      desc: 'Ranures llargues per a targetes d\'expansió, sobretot la targeta gràfica. La més propera a la CPU és la més ràpida.',
+      fact: 'Tenen un reforç metàl·lic per aguantar targetes gràfiques molt pesades.',
+      shapes: [{ t: 'rect', x: 583, y: 300, w: 35, h: 272 }, { t: 'rect', x: 737, y: 306, w: 36, h: 266 }, { t: 'rect', x: 847, y: 300, w: 24, h: 272 }] },
+    { id: 'pcie1', name: 'Ranures PCI Express x1', icon: 'fa-network-wired',
+      desc: 'Ranures curtes per a targetes petites: Wi-Fi, so, ports USB addicionals, capturadores de vídeo...',
+      fact: 'Una targeta x1 també funciona si la poses en una ranura x16.',
+      shapes: [{ t: 'rect', x: 693, y: 505, w: 25, h: 64 }, { t: 'rect', x: 796, y: 505, w: 23, h: 64 }] },
+    { id: 'cmos', name: 'Pila CMOS (CR2032)', icon: 'fa-battery-half',
+      desc: 'Manté l\'hora i la configuració de la BIOS/UEFI quan l\'ordinador està desconnectat de la corrent.',
+      fact: 'Si la treus uns minuts, la configuració de la BIOS torna als valors de fàbrica (Clear CMOS).',
+      shapes: [{ t: 'circle', cx: 700, cy: 467, r: 28 }] },
+    { id: 'qcode', name: 'Pantalla de diagnòstic (Debug LED)', icon: 'fa-bug',
+      desc: 'Mostra codis de dos dígits durant l\'arrencada (POST). Si l\'ordinador no engega, el codi indica on és el problema.',
+      fact: 'Cada codi correspon a una fase: memòria, CPU, gràfica, dispositiu d\'arrencada...',
+      shapes: [{ t: 'rect', x: 866, y: 490, w: 34, h: 42 }] },
+    { id: 'audio', name: 'Còdec d\'àudio (SupremeFX)', icon: 'fa-volume-high',
+      desc: 'Xip que converteix el so digital en senyal analògic per als altaveus i els auriculars.',
+      fact: 'La zona d\'àudio està separada de la resta de la placa per reduir interferències elèctriques.',
+      shapes: [{ t: 'rect', x: 757, y: 608, w: 52, h: 54 }] },
+    { id: 'audiocaps', name: 'Condensadors d\'àudio', icon: 'fa-music',
+      desc: 'Condensadors de qualitat especial per a àudio que filtren el senyal i fan que el so sigui més net.',
+      fact: 'Solen ser daurats o de colors per diferenciar-los dels altres condensadors.',
+      shapes: [{ t: 'rect', x: 812, y: 595, w: 86, h: 55 }] },
+    { id: 'sata', name: 'Ports SATA', icon: 'fa-database',
+      desc: 'Connecten discos durs (HDD), SSD SATA i unitats òptiques. Estan girats per facilitar el pas dels cables.',
+      fact: 'SATA III arriba fins a 6 Gb/s (uns 600 MB/s).',
+      shapes: [{ t: 'rect', x: 682, y: 63, w: 170, h: 45 }] },
+    { id: 'headers', name: 'Capçals interns (USB, ventiladors, RGB)', icon: 'fa-grip-vertical',
+      desc: 'Connectors de pins per als ports USB frontals de la caixa, ventiladors, tires LED RGB i el panell frontal (botó d\'encesa, LEDs...).',
+      fact: 'El manual de la placa indica exactament on va cada cable del panell frontal.',
+      shapes: [{ t: 'rect', x: 872, y: 108, w: 28, h: 374 }] },
+    { id: 'fan', name: 'Connectors del ventilador de CPU', icon: 'fa-wind',
+      desc: 'Connectors de 4 pins (CPU_FAN i CPU_OPT) per al ventilador del dissipador de la CPU. La placa en controla la velocitat (PWM).',
+      fact: 'Si no hi ha res connectat a CPU_FAN, moltes plaques mostren un avís en arrencar.',
+      shapes: [{ t: 'rect', x: 147, y: 155, w: 52, h: 95 }] },
+  ];
+
+  const GAME = {
+    find: { title: 'TROBA-LA', icon: 'fa-crosshairs', questions: 10, time: 20,
+            text: 'Et diré el nom d\'una part i l\'has de trobar a la foto fent-hi clic.',
+            hint: 'Fes clic a la part que et demana el joc.' },
+    quiz: { title: 'ENDEVINA EL NOM', icon: 'fa-circle-question', questions: 10, time: 15,
+            text: 'S\'il·luminarà una part de la placa i hauràs de triar el seu nom correcte.',
+            hint: 'Mira la zona il·luminada en groc i tria el nom correcte.' },
+  };
+
+  // ---------------------------------------------------------------
+  // Utilitats
+  // ---------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = $('hotspots');
+  const byId = Object.fromEntries(PARTS.map(p => [p.id, p]));
+  const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  const state = {
+    mode: 'explore',
+    found: new Set(store.get('placaquest-found', []).filter(id => byId[id])),
+    muted: store.get('placaquest-muted', false),
+    game: null,
+  };
+
+  // Sons amb Web Audio (sense fitxers externs)
+  let actx;
+  function beep(freqs, dur = 0.11, type = 'sine', vol = 0.12) {
+    if (state.muted) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime;
+      freqs.forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = type; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * dur);
+        g.gain.exponentialRampToValueAtTime(vol, t + i * dur + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + (i + 1) * dur);
+        o.connect(g).connect(actx.destination);
+        o.start(t + i * dur); o.stop(t + (i + 1) * dur + 0.02);
+      });
+    } catch {}
+  }
+  const sfx = {
+    click: () => beep([600], 0.06),
+    ok: () => beep([660, 880, 1100], 0.09),
+    bad: () => beep([220, 150], 0.14, 'sawtooth', 0.07),
+    win: () => beep([523, 659, 784, 1047], 0.12),
+  };
+
+  // ---------------------------------------------------------------
+  // Zones clicables (SVG)
+  // ---------------------------------------------------------------
+  const groups = {};
+  function buildHotspots() {
+    PARTS.forEach(p => {
+      const g = document.createElementNS(NS, 'g');
+      g.classList.add('part');
+      g.dataset.id = p.id;
+      p.shapes.forEach(s => {
+        let el;
+        if (s.t === 'rect') {
+          el = document.createElementNS(NS, 'rect');
+          Object.entries({ x: s.x, y: s.y, width: s.w, height: s.h, rx: 6 }).forEach(([k, v]) => el.setAttribute(k, v));
+        } else if (s.t === 'circle') {
+          el = document.createElementNS(NS, 'circle');
+          Object.entries({ cx: s.cx, cy: s.cy, r: s.r }).forEach(([k, v]) => el.setAttribute(k, v));
+        } else {
+          el = document.createElementNS(NS, 'polygon');
+          el.setAttribute('points', s.p);
+          el.setAttribute('stroke-linejoin', 'round');
+        }
+        g.appendChild(el);
+      });
+      g.addEventListener('click', (e) => { e.stopPropagation(); onPartClick(p, e); });
+      svg.appendChild(g);
+      groups[p.id] = g;
+    });
+    svg.querySelector('.bg').addEventListener('click', onBackgroundClick);
+  }
+
+  function svgPoint(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  function ripple(e) {
+    const p = svgPoint(e);
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 4);
+    c.classList.add('ripple');
+    svg.appendChild(c);
+    setTimeout(() => c.remove(), 750);
+  }
+
+  function addLabel(part, html, cls = '') {
+    const b = groups[part.id].getBBox();
+    const el = document.createElement('div');
+    el.className = 'board-label ' + cls;
+    el.innerHTML = html;
+    const below = b.y < 70;
+    el.style.left = ((b.x + b.width / 2) / 10) + '%';
+    el.style.top = ((below ? b.y + b.height : b.y) / 7.5) + '%';
+    if (below) el.classList.add('below');
+    $('labels').appendChild(el);
+    // Evita que l'etiqueta surti per les vores
+    const wrap = $('board').getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.left < wrap.left + 4) el.style.left = `calc(${el.style.left} + ${wrap.left + 4 - r.left}px)`;
+    if (r.right > wrap.right - 4) el.style.left = `calc(${el.style.left} - ${r.right - wrap.right + 4}px)`;
+  }
+
+  function clearMarks() {
+    Object.values(groups).forEach(g => g.classList.remove('selected', 'correct', 'wrong', 'target'));
+    $('labels').innerHTML = '';
+  }
+
+  function shake(el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+  // ---------------------------------------------------------------
+  // Mode EXPLORA
+  // ---------------------------------------------------------------
+  function selectPart(p) {
+    clearMarks();
+    groups[p.id].classList.add('selected');
+    addLabel(p, `<i class="fa-solid ${p.icon} me-1"></i>${p.name}`);
+    $('info').innerHTML = `
+      <div class="d-flex gap-3 align-items-center mb-3">
+        <div class="info-icon"><i class="fa-solid ${p.icon}"></i></div>
+        <h5 class="mb-0">${p.name}</h5>
+      </div>
+      <p class="mb-3">${p.desc}</p>
+      <div class="alert alert-info small mb-0 py-2"><i class="fa-solid fa-lightbulb me-2"></i><strong>Sabies que...</strong> ${p.fact}</div>`;
+    const isNew = !state.found.has(p.id);
+    state.found.add(p.id);
+    store.set('placaquest-found', [...state.found]);
+    renderFound();
+    if (isNew) {
+      sfx.ok();
+      if (state.found.size === PARTS.length) celebrate('Has descobert totes les parts de la placa!');
+    } else sfx.click();
+  }
+
+  function renderFound() {
+    const n = state.found.size, total = PARTS.length;
+    $('found-count').textContent = `${n}/${total}`;
+    $('found-bar').style.width = (n / total * 100) + '%';
+    PARTS.forEach(p => groups[p.id].classList.toggle('found', state.found.has(p.id)));
+    $('part-list').innerHTML = PARTS.map(p => state.found.has(p.id)
+      ? `<button class="btn btn-sm btn-outline-success part-chip" data-id="${p.id}"><i class="fa-solid ${p.icon} me-1"></i>${p.name}</button>`
+      : `<span class="btn btn-sm btn-outline-secondary part-chip locked disabled"><i class="fa-solid fa-lock me-1"></i>???</span>`
+    ).join('') + (n ? `<button class="btn btn-sm btn-link text-secondary" id="btn-reset"><i class="fa-solid fa-rotate-left me-1"></i>Reinicia</button>` : '');
+  }
+
+  $('part-list').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-id]');
+    if (chip) return selectPart(byId[chip.dataset.id]);
+    if (e.target.closest('#btn-reset')) {
+      state.found.clear(); store.set('placaquest-found', []);
+      clearMarks(); renderFound();
+    }
+  });
+
+  $('show-all').addEventListener('change', (e) => document.body.classList.toggle('show-all', e.target.checked));
+
+  // ---------------------------------------------------------------
+  // Modes de JOC
+  // ---------------------------------------------------------------
+  function showStart() {
+    const cfg = GAME[state.mode];
+    $('game-start').classList.remove('d-none');
+    $('game-play').classList.add('d-none');
+    $('start-icon').className = 'fa-solid ' + cfg.icon;
+    $('start-title').textContent = cfg.title;
+    $('start-text').textContent = cfg.text;
+    $('rule-q').textContent = cfg.questions;
+    $('rule-t').textContent = cfg.time;
+    $('best').textContent = store.get('placaquest-best-' + state.mode, 0);
+  }
+
+  function startGame() {
+    const cfg = GAME[state.mode];
+    state.game = {
+      queue: shuffle(PARTS).slice(0, cfg.questions),
+      idx: -1, score: 0, lives: 3, streak: 0, bestStreak: 0, correct: 0,
+      timeLeft: cfg.time, timer: null, locked: true, hintUsed: false,
+    };
+    $('game-start').classList.add('d-none');
+    $('game-play').classList.remove('d-none');
+    $('hud-total').textContent = state.game.queue.length;
+    $('find-tools').classList.toggle('d-none', state.mode !== 'find');
+    $('quiz-options').classList.toggle('d-none', state.mode !== 'quiz');
+    $('q-label').textContent = state.mode === 'find' ? 'Troba a la foto:' : 'Com es diu la part il·luminada?';
+    sfx.click();
+    nextQuestion();
+  }
+
+  function renderHud() {
+    const g = state.game;
+    $('hud-score').textContent = g.score;
+    $('hud-streak').textContent = g.streak;
+    $('hud-lives').innerHTML = [0, 1, 2].map(i => `<i class="fa-solid fa-heart ${i < g.lives ? '' : 'lost'}"></i>`).join(' ');
+    $('hud-q').textContent = Math.min(g.idx + 1, g.queue.length);
+  }
+
+  function nextQuestion() {
+    const g = state.game;
+    clearMarks();
+    g.idx++;
+    if (g.idx >= g.queue.length || g.lives <= 0) return endGame();
+    const target = g.queue[g.idx];
+    g.locked = false;
+    g.hintUsed = false;
+    $('feedback').classList.add('d-none');
+    $('hint-text').classList.add('d-none');
+    $('btn-hint').disabled = false;
+
+    if (state.mode === 'find') {
+      $('q-prompt').innerHTML = `<i class="fa-solid ${target.icon} me-2"></i>${target.name}`;
+    } else {
+      $('q-prompt').innerHTML = '<i class="fa-solid fa-arrow-left me-2 d-none d-lg-inline"></i>Mira la zona groga';
+      groups[target.id].classList.add('target');
+      const options = shuffle([target, ...shuffle(PARTS.filter(p => p.id !== target.id)).slice(0, 3)]);
+      $('quiz-options').innerHTML = options.map((p, i) =>
+        `<button class="btn btn-outline-light option-btn" data-id="${p.id}"><span class="badge text-bg-secondary me-2">${'ABCD'[i]}</span>${p.name}</button>`).join('');
+    }
+    renderHud();
+    startTimer();
+  }
+
+  function startTimer() {
+    const g = state.game, total = GAME[state.mode].time;
+    stopTimer();
+    g.timeLeft = total;
+    const tick = () => {
+      $('hud-time').textContent = Math.ceil(g.timeLeft);
+      const pct = g.timeLeft / total * 100;
+      $('timer-fill').style.width = pct + '%';
+      $('timer-fill').style.backgroundPosition = (100 - pct) + '% 0';
+    };
+    tick();
+    g.timer = setInterval(() => {
+      g.timeLeft = Math.max(0, g.timeLeft - 0.1);
+      tick();
+      if (g.timeLeft <= 0) answer(false, null, 'timeout');
+    }, 100);
+  }
+
+  function stopTimer() { if (state.game && state.game.timer) { clearInterval(state.game.timer); state.game.timer = null; } }
+
+  function showFeedback(ok, html) {
+    const fb = $('feedback');
+    fb.className = `mt-3 alert ${ok ? 'alert-success' : 'alert-danger'} py-2 small`;
+    fb.innerHTML = html;
+  }
+
+  // ok: si és correcte · clicked: la part que s'ha triat (o null) · reason: 'timeout' | 'miss'
+  function answer(ok, clicked, reason) {
+    const g = state.game;
+    if (!g || g.locked) return;
+    g.locked = true;
+    stopTimer();
+    const target = g.queue[g.idx];
+    groups[target.id].classList.remove('target');
+
+    if (ok) {
+      g.streak++;
+      g.correct++;
+      g.bestStreak = Math.max(g.bestStreak, g.streak);
+      const pts = 100 + Math.round(g.timeLeft * 5) + (g.streak - 1) * 20 - (g.hintUsed ? 30 : 0);
+      g.score += Math.max(pts, 10);
+      groups[target.id].classList.add('correct');
+      addLabel(target, `<i class="fa-solid fa-check me-1"></i>${target.name}`, 'ok');
+      showFeedback(true, `<i class="fa-solid fa-circle-check me-2"></i><strong>Correcte! +${Math.max(pts, 10)}</strong>${g.streak > 1 ? ` · <i class="fa-solid fa-fire"></i> ratxa de ${g.streak}` : ''}<div class="mt-1 opacity-75">${target.desc}</div>`);
+      sfx.ok();
+      if (g.streak >= 3 && window.confetti) confetti({ particleCount: 40, spread: 60, origin: { y: .7 } });
+    } else {
+      g.streak = 0;
+      g.lives--;
+      groups[target.id].classList.add('correct');
+      addLabel(target, `<i class="fa-solid fa-check me-1"></i>${target.name}`, 'ok');
+      let msg;
+      if (reason === 'timeout') msg = 'S\'ha acabat el temps!';
+      else if (clicked) {
+        groups[clicked.id].classList.add('wrong');
+        addLabel(clicked, `<i class="fa-solid fa-xmark me-1"></i>${clicked.name}`, 'bad');
+        msg = `Això era: <strong>${clicked.name}</strong>.`;
+      } else msg = 'Aquí no hi ha la part que busques.';
+      showFeedback(false, `<i class="fa-solid fa-circle-xmark me-2"></i>${msg} La resposta correcta està marcada en verd: <strong>${target.name}</strong>.`);
+      sfx.bad();
+      shake($('question-card'));
+    }
+    renderHud();
+    setTimeout(nextQuestion, ok ? 1800 : 2600);
+  }
+
+  function onPartClick(p, e) {
+    if (state.mode === 'explore') return selectPart(p);
+    if (state.mode === 'find' && state.game && !state.game.locked) {
+      ripple(e);
+      answer(p.id === state.game.queue[state.game.idx].id, p, 'miss');
+    }
+  }
+
+  function onBackgroundClick(e) {
+    if (state.mode === 'find' && state.game && !state.game.locked) {
+      ripple(e);
+      answer(false, null, 'miss');
+    } else if (state.mode === 'explore') {
+      clearMarks();
+    }
+  }
+
+  $('quiz-options').addEventListener('click', (e) => {
+    const btn = e.target.closest('.option-btn');
+    const g = state.game;
+    if (!btn || !g || g.locked) return;
+    const target = g.queue[g.idx];
+    const ok = btn.dataset.id === target.id;
+    $('quiz-options').querySelectorAll('.option-btn').forEach(b => {
+      b.disabled = true;
+      if (b.dataset.id === target.id) b.classList.add('correct');
+    });
+    if (!ok) btn.classList.add('wrong');
+    answer(ok, null, 'quiz');
+  });
+
+  $('btn-hint').addEventListener('click', () => {
+    const g = state.game;
+    if (!g || g.locked) return;
+    g.hintUsed = true;
+    $('btn-hint').disabled = true;
+    $('hint-text').classList.remove('d-none');
+    $('hint-text').innerHTML = `<i class="fa-solid fa-lightbulb me-1"></i>${byId[g.queue[g.idx].id].desc}`;
+  });
+
+  function endGame() {
+    const g = state.game;
+    stopTimer();
+    g.locked = true;
+    const key = 'placaquest-best-' + state.mode;
+    const best = store.get(key, 0);
+    const record = g.score > best;
+    if (record) store.set(key, g.score);
+
+    const ratio = g.correct / g.queue.length;
+    const stars = ratio >= .9 ? 3 : ratio >= .6 ? 2 : ratio >= .3 ? 1 : 0;
+    $('end-title').textContent = g.lives <= 0 ? 'GAME OVER' : stars === 3 ? 'INCREÏBLE!' : 'FI DE LA PARTIDA';
+    $('end-stars').innerHTML = [0, 1, 2].map(i => `<i class="fa-solid fa-star ${i < stars ? 'on' : ''}"></i>`).join('');
+    $('end-score').textContent = g.score;
+    $('end-correct').textContent = `${g.correct}/${g.queue.length}`;
+    $('end-streak').textContent = g.bestStreak;
+    $('end-record').classList.toggle('d-none', !record || g.score === 0);
+    endModal.show();
+    if (stars >= 2) celebrate(); else sfx.bad();
+  }
+
+  function celebrate(text) {
+    sfx.win();
+    if (window.confetti) {
+      confetti({ particleCount: 160, spread: 90, origin: { y: .6 } });
+      setTimeout(() => confetti({ particleCount: 100, angle: 60, spread: 70, origin: { x: 0 } }), 250);
+      setTimeout(() => confetti({ particleCount: 100, angle: 120, spread: 70, origin: { x: 1 } }), 400);
+    }
+    if (text) {
+      $('info').insertAdjacentHTML('beforeend', `<div class="alert alert-success small mt-3 mb-0 py-2"><i class="fa-solid fa-trophy me-2"></i>${text}</div>`);
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Canvi de mode i controls generals
+  // ---------------------------------------------------------------
+  function setMode(mode) {
+    stopTimer();
+    state.game = null;
+    clearMarks();
+    state.mode = mode;
+    document.body.classList.remove('mode-explore', 'mode-find', 'mode-quiz');
+    document.body.classList.add('mode-' + mode);
+    document.body.classList.toggle('show-all', mode === 'explore' && $('show-all').checked);
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    $('panel-explore').classList.toggle('d-none', mode !== 'explore');
+    $('panel-game').classList.toggle('d-none', mode === 'explore');
+    $('board-hint').textContent = mode === 'explore'
+      ? 'Passa el ratolí per sobre la placa i fes clic a qualsevol part per descobrir-ne el nom.'
+      : GAME[mode].hint;
+    if (mode !== 'explore') showStart();
+  }
+
+  document.querySelectorAll('.mode-btn').forEach(b => b.addEventListener('click', () => { sfx.click(); setMode(b.dataset.mode); }));
+  $('btn-start').addEventListener('click', startGame);
+  $('btn-quit').addEventListener('click', () => { stopTimer(); state.game = null; clearMarks(); showStart(); });
+  $('btn-again').addEventListener('click', () => { endModal.hide(); startGame(); });
+  $('btn-explore').addEventListener('click', () => { endModal.hide(); setMode('explore'); });
+
+  function renderMute() { $('btn-mute').innerHTML = `<i class="fa-solid ${state.muted ? 'fa-volume-xmark' : 'fa-volume-high'}"></i>`; }
+  $('btn-mute').addEventListener('click', () => { state.muted = !state.muted; store.set('placaquest-muted', state.muted); renderMute(); });
+
+  const endModal = new bootstrap.Modal($('endModal'));
+
+  buildHotspots();
+  renderFound();
+  renderMute();
+  </script>
+</body>
+</html>

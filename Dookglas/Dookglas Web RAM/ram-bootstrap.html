@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ca" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La memòria RAM</title>
+
+  <!-- Bootstrap CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome (CDN) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    .hero { background: linear-gradient(135deg, #0f4a35, #1a6a4b); color: #fff; }
+    .hero .lead { color: #d8e8df; }
+    .gold { color: #e3b53f; }
+    .icon-box { width: 56px; height: 56px; display: inline-flex; align-items: center; justify-content: center;
+                border-radius: 12px; background: #0f4a35; color: #e3b53f; font-size: 1.5rem; }
+    .bar-ram { height: 14px; }
+    .progress-bar { background-color: #c8961e; transition: width .5s; }
+    .btn-uso.active { background-color: #0f4a35; border-color: #0f4a35; color: #fff; }
+    .zoom-img { cursor: zoom-in; }
+  </style>
+</head>
+<body>
+
+<!-- Navegació -->
+<nav class="navbar navbar-expand-md bg-body-tertiary sticky-top border-bottom">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#inici"><i class="fa-solid fa-memory gold me-2"></i>RAM</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Obre el menú">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="menu">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="#que-es">Què és</a></li>
+        <li class="nav-item"><a class="nav-link" href="#parts">Parts</a></li>
+        <li class="nav-item"><a class="nav-link" href="#tipus">Tipus</a></li>
+        <li class="nav-item"><a class="nav-link" href="#quanta">Quanta en necessites</a></li>
+        <li class="nav-item"><a class="nav-link" href="#preguntes">Preguntes</a></li>
+      </ul>
+      <button id="tema" class="btn btn-outline-secondary btn-sm" type="button" aria-label="Canvia el tema">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header id="inici" class="hero py-5">
+  <div class="container py-4">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-5">
+        <h1 class="display-3 fw-bold">La memòria <span class="gold">RAM</span></h1>
+        <p class="lead mt-3">L’espai de treball del teu ordinador: ràpid, temporal i imprescindible. Tot el que tens obert viu aquí mentre el fas servir.</p>
+        <a href="#quanta" class="btn btn-warning btn-lg mt-2"><i class="fa-solid fa-calculator me-2"></i>Quanta en necessito?</a>
+      </div>
+      <div class="col-lg-7">
+        <img src="ram.png" class="img-fluid rounded shadow zoom-img" alt="Dos mòduls de memòria RAM DDR i detalls dels xips, el controlador i els contactes"
+             data-bs-toggle="modal" data-bs-target="#modalImg">
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Què és -->
+<section id="que-es" class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-4">Què és la RAM?</h2>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <p>RAM vol dir <em>Random Access Memory</em>, és a dir, memòria d’accés aleatori. És la memòria a curt termini del dispositiu: hi guarda els programes oberts, les pàgines web i els fitxers amb què estàs treballant perquè el processador hi pugui accedir en nanosegons.</p>
+        <p>Un disc SSD guarda les dades per sempre, però és molt més lent. La RAM és molt més ràpida, però <strong>és volàtil</strong>: quan s’apaga l’equip, tot el que conté desapareix.</p>
+      </div>
+      <div class="col-md-6">
+        <div class="alert alert-success d-flex" role="alert">
+          <i class="fa-solid fa-lightbulb fa-lg mt-1 me-3"></i>
+          <div>Una bona comparació: el disc és l’arxivador de l’estudi; la RAM és la taula de treball. Com més gran és la taula, més coses pots tenir a mà alhora.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4 mt-1 text-center">
+      <div class="col-6 col-md-3"><div class="icon-box mb-2"><i class="fa-solid fa-bolt"></i></div><h3 class="h6 fw-bold">Molt ràpida</h3><p class="small text-body-secondary">Accés en nanosegons.</p></div>
+      <div class="col-6 col-md-3"><div class="icon-box mb-2"><i class="fa-solid fa-power-off"></i></div><h3 class="h6 fw-bold">Volàtil</h3><p class="small text-body-secondary">Es buida en apagar l’equip.</p></div>
+      <div class="col-6 col-md-3"><div class="icon-box mb-2"><i class="fa-solid fa-layer-group"></i></div><h3 class="h6 fw-bold">Multitasca</h3><p class="small text-body-secondary">Més RAM, més programes alhora.</p></div>
+      <div class="col-6 col-md-3"><div class="icon-box mb-2"><i class="fa-solid fa-plug"></i></div><h3 class="h6 fw-bold">Ampliable</h3><p class="small text-body-secondary">Es pot canviar o afegir.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Parts del mòdul -->
+<section id="parts" class="py-5 bg-body-tertiary">
+  <div class="container">
+    <h2 class="fw-bold mb-2">Parts d’un mòdul</h2>
+    <p class="text-body-secondary mb-4">Mira la imatge de dalt i fes clic a cada pestanya per veure què és cada peça.</p>
+    <ul class="nav nav-pills mb-3" id="parts-tabs" role="tablist">
+      <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#p1" type="button" role="tab"><i class="fa-solid fa-microchip me-1"></i>Xips</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#p2" type="button" role="tab"><i class="fa-solid fa-sitemap me-1"></i>Controlador</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#p3" type="button" role="tab"><i class="fa-solid fa-grip-lines-vertical me-1"></i>Contactes</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#p4" type="button" role="tab"><i class="fa-solid fa-lock me-1"></i>Osques</button></li>
+    </ul>
+    <div class="tab-content border rounded p-4 bg-body">
+      <div class="tab-pane fade show active" id="p1" role="tabpanel"><strong>Xips de memòria (DRAM).</strong> Són els rectangles negres. Cada xip guarda una part de les dades; com més xips o més densos, més capacitat té el mòdul.</div>
+      <div class="tab-pane fade" id="p2" role="tabpanel"><strong>Xip de gestió i components SMD.</strong> El petit xip del centre i els components que l’envolten regulen la tensió i gestionen les comunicacions del mòdul.</div>
+      <div class="tab-pane fade" id="p3" role="tabpanel"><strong>Contactes daurats.</strong> Connecten el mòdul amb la placa base. L’or no s’oxida i garanteix un bon contacte elèctric. La mossa del mig impedeix inserir-lo al revés o en una ranura d’una altra generació.</div>
+      <div class="tab-pane fade" id="p4" role="tabpanel"><strong>Osques laterals.</strong> Són les mosses on s’agafen els clips de la ranura per fixar el mòdul a la placa base.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Tipus -->
+<section id="tipus" class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-2">Generacions de RAM</h2>
+    <p class="text-body-secondary">Cada generació DDR (<em>Double Data Rate</em>) és més ràpida i eficient, però no són compatibles entre elles: la placa base només admet una generació.</p>
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+          <tr><th>Tipus</th><th>Any aprox.</th><th>Velocitat típica</th><th>Tensió</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge text-bg-secondary">DDR3</span></td><td>2007</td><td>1066–2133 MT/s</td><td>1,5 V</td></tr>
+          <tr><td><span class="badge text-bg-primary">DDR4</span></td><td>2014</td><td>2133–3600 MT/s</td><td>1,2 V</td></tr>
+          <tr><td><span class="badge text-bg-success">DDR5</span></td><td>2020</td><td>4800–8000+ MT/s</td><td>1,1 V</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mb-0">A més de la generació, convé mirar la <strong>capacitat</strong> (GB), la <strong>freqüència</strong> i el nombre de mòduls: dos mòduls iguals en <em>doble canal</em> donen més amplada de banda que un de sol.</p>
+  </div>
+</section>
+
+<!-- Calculadora -->
+<section id="quanta" class="py-5 bg-body-tertiary">
+  <div class="container">
+    <h2 class="fw-bold mb-2">Quanta RAM necessites?</h2>
+    <p class="text-body-secondary">Tria com fas servir l’ordinador i et donarem una referència orientativa.</p>
+    <div id="usos" class="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Tipus d’ús"></div>
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-box"><i id="ico" class="fa-solid fa-globe"></i></div>
+          <div class="display-5 fw-bold" id="gb">16 GB</div>
+        </div>
+        <div class="progress bar-ram my-3" role="progressbar" aria-label="Nivell de RAM recomanat">
+          <div id="fill" class="progress-bar" style="width:0%"></div>
+        </div>
+        <p id="txt" class="mb-0" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Preguntes -->
+<section id="preguntes" class="py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-4">Preguntes freqüents</h2>
+    <div class="accordion" id="faq">
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#f1">Quina diferència hi ha entre RAM i emmagatzematge?</button></h3>
+        <div id="f1" class="accordion-collapse collapse show" data-bs-parent="#faq"><div class="accordion-body">L’emmagatzematge (SSD o disc dur) conserva les dades quan s’apaga l’equip. La RAM és molt més ràpida, però només guarda el que estàs fent servir en aquest moment.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f2">Puc barrejar mòduls de RAM diferents?</button></h3>
+        <div id="f2" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">Pots, però és millor fer servir mòduls idèntics. Si són diferents, tots funcionaran a la velocitat del més lent i pots perdre el rendiment del doble canal.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#f3">Més RAM fa l’ordinador més ràpid?</button></h3>
+        <div id="f3" class="accordion-collapse collapse" data-bs-parent="#faq"><div class="accordion-body">Només si fins ara et quedaves curt. Quan hi ha prou RAM per a les teves tasques, afegir-ne més no millora el rendiment de manera apreciable.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modal de la imatge -->
+<div class="modal fade" id="modalImg" tabindex="-1" aria-label="Imatge ampliada">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body p-2"><img src="ram.png" class="img-fluid" alt="Mòduls de memòria RAM ampliats"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="py-4 border-top text-center text-body-secondary small">
+  <i class="fa-solid fa-memory me-1"></i>Pàgina informativa sobre la memòria RAM. Les xifres són orientatives.
+</footer>
+
+<!-- Bootstrap JS (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Calculadora de RAM
+  const usos = [
+    { n: "Ofimàtica i web",       i: "fa-globe",     gb: "8 GB",        p: 12,  t: "Navegar, escriure documents i veure vídeos. Amb 8 GB va bé, sempre que no tinguis desenes de pestanyes obertes." },
+    { n: "Ús general",            i: "fa-house",     gb: "16 GB",       p: 30,  t: "Molts programes oberts alhora, videotrucades i multitasca còmoda. Avui és el punt dolç per a la majoria de persones." },
+    { n: "Videojocs",             i: "fa-gamepad",   gb: "16–32 GB",    p: 50,  t: "Els jocs actuals recomanen 16 GB com a mínim. Si també fas streaming o tens aplicacions de fons, millor 32 GB." },
+    { n: "Edició i programació",  i: "fa-code",      gb: "32 GB",       p: 70,  t: "Edició de vídeo, màquines virtuals, compilacions grans i dissenys 3D es beneficien molt de tenir marge." },
+    { n: "IA i servidors",        i: "fa-server",    gb: "64 GB o més", p: 100, t: "Els models d’IA locals, les bases de dades i les simulacions poden consumir tanta RAM com els donis." }
+  ];
+  const cont = document.getElementById("usos");
+
+  function triar(k) {
+    [...cont.children].forEach((b, j) => b.classList.toggle("active", j === k));
+    document.getElementById("gb").textContent = usos[k].gb;
+    document.getElementById("txt").textContent = usos[k].t;
+    document.getElementById("fill").style.width = usos[k].p + "%";
+    document.getElementById("ico").className = "fa-solid " + usos[k].i;
+  }
+  usos.forEach((u, k) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "btn btn-outline-secondary btn-uso";
+    b.innerHTML = '<i class="fa-solid ' + u.i + ' me-2"></i>' + u.n;
+    b.addEventListener("click", () => triar(k));
+    cont.appendChild(b);
+  });
+  triar(1);
+
+  // Canvi de tema clar/fosc
+  const tema = document.getElementById("tema");
+  tema.addEventListener("click", () => {
+    const html = document.documentElement;
+    const fosc = html.getAttribute("data-bs-theme") === "dark";
+    html.setAttribute("data-bs-theme", fosc ? "light" : "dark");
+    tema.innerHTML = fosc ? '<i class="fa-solid fa-moon"></i>' : '<i class="fa-solid fa-sun"></i>';
+  });
+</script>
+</body>
+</html>
